@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #define HEADER_SIZE 8 //bytes
 
@@ -16,17 +17,25 @@ uint16_t cvt8to16(uint8_t dataFirst, uint8_t dataSecond)
 
 int main(int argc, char *argv[])
 {
-	if (argc < 2)
+	if (! strcmp(argv[1], "-h") || ! strcmp(argv[1], "--help")  || argc < 3)
 	{
-		printf("Syntax: \n");
-		printf("  ./rso <file>\n\n");
+		
+		printf("\
+ Syntax: 						\n\
+   ./rso <option> <file>		\n\
+								\n\
+ Options: 						\n\
+   -h		= display help.		\n\
+   -a		= Analyse an RSO file (display the header data).	\n\
+	\n\n");
+
 		return 1;
 	}
 	
 	printf("Opening file...   ");
 	
 	FILE *inFile;
-	inFile = fopen(argv[1], "r");
+	inFile = fopen(argv[2], "r");
 	
 	if (! inFile)
 	{
@@ -120,18 +129,22 @@ int main(int argc, char *argv[])
 		loop++;
 	}
 	
+	fclose(inFile);
+	
 	printf("done.\n");
 	
 	printf("\n");
 	
-	if ( (int) compression == 1)
-	{	
-		printf("Compression   = Yes\n");
-	} else {
-		printf("Compression   = No\n");
+	if (! strcmp(argv[1], "-a") )
+	{
+		if ( (int) compression == 1)
+		{	
+			printf("Compression   = Yes\n");
+		} else {
+			printf("Compression   = No\n");
+		}
+		printf("Sample count  = %d\n", (int) length);		 // "Number of samples  = %04X\n" prints it in HEX.
+		printf("Samplerate    = %dHz", (int) smplrate);
 	}
-	printf("Sample count  = %d\n", (int) length);		 // "Number of samples  = %04X\n" prints it in HEX.
-	printf("Samplerate    = %dHz", (int) smplrate);
-	
-	fclose(inFile);
+
 }
