@@ -1,8 +1,12 @@
 #include <stdio.h>
-#include <stdint.h>
-#include <string.h>
+#include <stdint.h> 	// for uint8_t and uint16_t
+#include <string.h>		// for strcmp();
+#include <stdlib.h>		// for memset();
 
-#define HEADER_SIZE 8 //bytes
+/* Should compile on any GCC compatible compiler.
+ * For license see 'LICENSE'.
+ *
+ */
 
 uint16_t cvt8to16(uint8_t dataFirst, uint8_t dataSecond)
 {
@@ -26,7 +30,8 @@ int main(int argc, char *argv[])
 								\n\
  Options: 						\n\
    -h		= display help.		\n\
-   -a		= Analyse an RSO file (display the header data).	\n\
+   -a		= Analyse an RSO file (display the header data).		\n\
+   -d		= Dump the sample data to the screen as hexadecimal.	\n\
 	\n\n");
 
 		return 1;
@@ -57,6 +62,21 @@ int main(int argc, char *argv[])
 	
 	uint8_t padding1, padding2;		// Just used to check the padding...
 	
+	int divisions; 		// The number of 64kb chunks in the file
+	
+	// And, most importantly,
+	uint8_t samples[1][65534];
+	
+	/* 65534 is the maximum number of samples in an RSO file,
+	 * since the fiels occupies 2 bytes in the header.
+	 * However, a potential workaround for this could exist
+	 * by putting another header at the end of the sample data,
+	 * thus allowing for another set of 65534 samples.
+	 * this is why samples is a pointer to an array of 65534-byte arrays.
+	 */
+	
+	//memset(samples[0], 0, 65534);
+	
 	printf("Analysing file...   ");
 	
 	int x;
@@ -66,7 +86,7 @@ int main(int argc, char *argv[])
 		if (loop == 0)
 		{
 			if (x != 1) {
-				printf("error.\nMagic byte at offset 0 should be 01.\n");
+				printf("error.\n'> Magic byte at offset 0 should be 01.\n");
 				return 2;
 			}
 		}
@@ -79,7 +99,7 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				printf("error.\nCompression flag at offset 1 should be 00 or 01.\n");
+				printf("error.\n'> Compression flag at offset 1 should be 00 or 01.\n");
 				return 2;
 			}
 		}
@@ -121,19 +141,29 @@ int main(int argc, char *argv[])
 			
 			if ( (int) cvt8to16(padding1, padding2) != 0)
 			{
-				printf("error.\nPadding at offset 7 & 8 should be 00 00.\n");
+				printf("error.\n'> Padding at offset 7 & 8 should be 00 00.\n");
 				return 2;
 			}
+			
+			printf("done.\n");
+			printf("Reading sample data...   ");
+		}
+		
+		if (loop >= 8 && loop > 65535)
+		{
+			samples[0][loop-8] = (uint8_t) x;
 		}
 		
 		loop++;
 	}
-	
-	fclose(inFile);
-	
 	printf("done.\n");
 	
-	printf("\n");
+	printf("Closing file...   ");
+	fclose(inFile);		// Closes the file...
+	printf("done.\n");
+	
+	divisions = loop / 65534;
+	
 	
 	if (! strcmp(argv[1], "-a") )
 	{
@@ -145,6 +175,16 @@ int main(int argc, char *argv[])
 		}
 		printf("Sample count  = %d\n", (int) length);		 // "Number of samples  = %04X\n" prints it in HEX.
 		printf("Samplerate    = %dHz", (int) smplrate);
+	}
+	
+	if (! strcmp(argv[1], "-d"))
+	{
+		for (int i = 0; i < 65534; i++)
+		{
+			//if (i % 8 == 0)  printf("\n   ");
+			
+			printf("%04X ", samples[0][i]);
+		}
 	}
 
 }
