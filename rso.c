@@ -3,6 +3,9 @@
 #include <string.h>		// for strcmp();
 #include <stdlib.h>		// for memset();
 
+#define MAX_DIVISIONS 32
+#define DUMP_WIDTH 16
+
 /* Should compile on any GCC compatible compiler.
  * For license see 'LICENSE'.
  *
@@ -65,7 +68,7 @@ int main(int argc, char *argv[])
 	int divisions; 		// The number of 64kb chunks in the file
 	
 	// And, most importantly,
-	uint8_t samples[1][65534];
+	uint8_t samples[65534];
 	
 	/* 65534 is the maximum number of samples in an RSO file,
 	 * since the fiels occupies 2 bytes in the header.
@@ -75,7 +78,7 @@ int main(int argc, char *argv[])
 	 * this is why samples is a pointer to an array of 65534-byte arrays.
 	 */
 	
-	//memset(samples[0], 0, 65534);
+	memset(samples, 0, 65534);
 	
 	printf("Analysing file...   ");
 	
@@ -149,9 +152,10 @@ int main(int argc, char *argv[])
 			printf("Reading sample data...   ");
 		}
 		
-		if (loop >= 8 && loop > 65535)
+		if (loop >= 8 && loop < 65535)
 		{
-			samples[0][loop-8] = (uint8_t) x;
+			samples[loop-8] = (uint8_t) x;
+
 		}
 		
 		loop++;
@@ -162,7 +166,7 @@ int main(int argc, char *argv[])
 	fclose(inFile);		// Closes the file...
 	printf("done.\n");
 	
-	divisions = loop / 65534;
+	//divisions = loop / 65534; 	//
 	
 	
 	if (! strcmp(argv[1], "-a") )
@@ -179,11 +183,13 @@ int main(int argc, char *argv[])
 	
 	if (! strcmp(argv[1], "-d"))
 	{
-		for (int i = 0; i < 65534; i++)
+		printf("Dumping chunk 1 as hex:");
+		
+		for (int i = 0; i < (loop-8); i++)
 		{
-			//if (i % 8 == 0)  printf("\n   ");
+			if (i % DUMP_WIDTH == 0)  printf("\n   ");
 			
-			printf("%04X ", samples[0][i]);
+			printf("%02X ", (int) samples[i]);		// THIS DOES NOT WORK; it seams to be reading from somewhere else in RAM, since when I made it print out the bytes as chars, I saw the strings "ELF" and "GNU". Hmm...
 		}
 	}
 
