@@ -8,7 +8,8 @@
 #define MAX_DIVISIONS 32
 #define DUMP_WIDTH 16
 
-/* Should compile on any GCC compatible compiler.
+/* Should compile on any GCC compatible compiler with libsndfile installed;
+ * use 'gcc rso.c -L /usr/lib/i386-linux-gnu/ -lsndfile -o rso'
  * For license see 'LICENSE'.
  *
  */
@@ -24,18 +25,18 @@ uint16_t cvt8to16(uint8_t dataFirst, uint8_t dataSecond)
 	return dataBoth;
 }
 
-struct rsoHeaderData
+struct rso_header_data
 {
 	int compression;
 	uint16_t length;
 	uint16_t samplerate;
 };
 
-int readRsoFile(char *loc, uint8_t *samples, struct rsoHeaderData *header)
+int readRsoFile(char *loc, uint8_t *samples, struct rso_header_data *header)
 {
 	// Opens the file...
 	
-	printf("Opening file...   ");
+	printf("Opening file...\t");
 	
 	FILE *inFile;
 	inFile = fopen(loc, "r");
@@ -62,7 +63,7 @@ int readRsoFile(char *loc, uint8_t *samples, struct rsoHeaderData *header)
 	
 	//
 	
-	printf("Analysing file...   ");
+	printf("Analysing file...\t");
 	
 	int x;
 	int loop = 0;
@@ -131,7 +132,7 @@ int readRsoFile(char *loc, uint8_t *samples, struct rsoHeaderData *header)
 			}
 			
 			printf("done.\n");
-			printf("Reading sample data...   ");
+			printf("Reading sample data...\t");
 		}
 		
 		if (loop >= 8 && loop < 65535)
@@ -144,7 +145,7 @@ int readRsoFile(char *loc, uint8_t *samples, struct rsoHeaderData *header)
 	}
 	printf("done.\n");
 	
-	printf("Closing file...   ");
+	printf("Closing file...\t");
 	fclose(inFile);		// Closes the file...
 	printf("done.\n");
 	
@@ -158,12 +159,13 @@ int main(int argc, char *argv[])
 		
 		printf("\
  Syntax: 				\n\
-   ./rso <option> <file>		\n\
+   ./rso <option> <file> [outfile]	\n\
 					\n\
  Options: 				\n\
    -h		= display help.		\n\
    -a		= Analyse an RSO file (display the header data).		\n\
    -d		= Dump the sample data to the screen as hexadecimal.		\n\
+   -w		= Convers an RSO file to <outfile> in wav format.		\n\
 	\n\n");
 
 		exit(0);
@@ -183,38 +185,85 @@ int main(int argc, char *argv[])
 	
 	memset(samples, 0, 65534);
 	
-	struct rsoHeaderData *rsoHeader = malloc(sizeof(struct rsoHeaderData));
+	struct rso_header_data *rso_header = malloc(sizeof(struct rso_header_data));
 	
 	
 	// Now for interpreting the cmdline arguments...
 	
 	if (! strcmp(argv[1], "-a") )
 	{
-		readRsoFile(argv[2], &samples[0], rsoHeader);
+		readRsoFile(argv[2], &samples[0], rso_header);
 		
-		if ( rsoHeader -> compression == 1)
+		if ( rso_header -> compression == 1)
 		{	
 			printf("Compression   = Yes\n");
 		} else {
 			printf("Compression   = No\n");
 		}
-		printf("Sample count  = %d\n", (int) rsoHeader -> length);		 // "Number of samples  = %04X\n" prints it in HEX.
-		printf("Samplerate    = %dHz", (int) rsoHeader -> samplerate);
+		printf("Sample count  = %d\n", (int) rso_header -> length);		 // "Number of samples  = %04X\n" prints it in HEX.
+		printf("Samplerate    = %dHz", (int) rso_header -> samplerate);
 	}
 	
 	if (! strcmp(argv[1], "-d"))
 	{
-		readRsoFile(argv[2], &samples[0], rsoHeader);
+		readRsoFile(argv[2], &samples[0], rso_header);
 		
 		printf("Dumping chunk 1 as hex:");
 		
-		for (int i = 0; i < (rsoHeader->length - 8); i++)
+		for (int i = 0; i < (rso_header->length - 8); i++)
 		{
 			if (i % DUMP_WIDTH == 0)  printf("\n   ");
 			
 			printf("%02X ", (int) samples[i]);
 		}
 	}
+	
+	if (! strcmp(argv[1], "-w") )	// They want to convert to WAV
+	{
+		readRsoFile(argv[2], &samples[0], rso_header);		// Reads our rso file into the array of 8-bit ints and the header_data struct
+		
+		struct SF_INFO *wav_header = malloc(sizeof(SF_INFO));
+		
+		wav_header -> frames 		= rso_header -> length;
+		wav_header -> samplerate	= rso_header -> samplerate;
+		wav_header -> channels 		= 1;
+		wav_header -> format 		= SF_FORMAT_WAV | SF_FORMAT_PCM_U8;		// i.e. WAV format, unsigned 8-bit PCM, since the samples are uint8_t.
+		wav_header -> sections		= 1;  // Not too sure what these two are meant to be...
+		wav_header -> seekable 		= 0;  //
+		
+		printf("Opening WAV file...\t");
+		SNDFILE* wav_file;
+		wav_file = sf_open(argv[3], SFM_WRITE, wav_header);
+		printf("done.\n");
+		
+		printf("Writing sample data to file...\t");
+		
+		short samples16[65534]; 	// Will be the equivalent of samples[], but with short instead of uint8_t
+		
+		for (int i = 0; i < (rso_header->length); i++)
+		{
+			short tmp = (short)(samples[i]-128);		// Converts the sample to signed
+			
+			samples16[i] = tmp << 8 /*(samples[i] << 8)*/;
+			//printf("%d ", (int) tmp);
+		}
+		
+		//for (int i = 0; i < (rso_header->length); i++)
+		//{
+			
+		//}
+		
+		sf_write_short(wav_file, samples16, (rso_header->length));
+		
+		printf("done.\n");
+		
+		printf("Closing WAV file...\t");
+		
+		sf_close(wav_file);
+		
+		printf("done.\n");
+	}
+	
 
 	exit(0);
 }
