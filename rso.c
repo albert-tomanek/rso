@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
 		
 		printf("\
  Syntax: 						\n\
-   ./rso <option> <file>		\n\
-								\n\
+   ./rso <option> <file>				\n\
+							\n\
  Options: 						\n\
    -h		= display help.		\n\
    -a		= Analyse an RSO file (display the header data).		\n\
