@@ -3,6 +3,8 @@
 #include <string.h>		// for strcmp();
 #include <stdlib.h>		// for memset();
 
+#include <sndfile.h>	// The libsndfile header; can be obtained by 'sudo apt-get install libsndfile-dev' or from http://www.mega-nerd.com/libsndfile/
+
 #define MAX_DIVISIONS 32
 #define DUMP_WIDTH 16
 
@@ -189,7 +191,7 @@ int main(int argc, char *argv[])
 		{
 			if (i % DUMP_WIDTH == 0)  printf("\n   ");
 			
-			printf("%02X ", (int) samples[i]);		// THIS DOES NOT WORK; it seams to be reading from somewhere else in RAM, since when I made it print out the bytes as chars, I saw the strings "ELF" and "GNU". Hmm...
+			printf("%02X ", (int) samples[i]);
 		}
 	}
 
