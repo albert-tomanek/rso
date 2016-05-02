@@ -14,6 +14,8 @@
  *
  */
 
+
+// Used to convert two 8-bit values to a 16-bit value (i.e. the header data in the rso file)
 uint16_t cvt8to16(uint8_t dataFirst, uint8_t dataSecond)
 {
 	uint16_t dataBoth = 0x0000;
@@ -23,6 +25,11 @@ uint16_t cvt8to16(uint8_t dataFirst, uint8_t dataSecond)
 	dataBoth |= dataSecond;
 	
 	return dataBoth;
+}
+void cvt16to8(uint16_t dataAll, uint8_t arrayData[2])		// Don't ask me how this works, but it does it's job.
+{
+	arrayData[0] = (dataAll >> 8) & 0x00FF;
+	arrayData[1] = dataAll & 0x00FF;
 }
 
 struct rso_header_data
@@ -36,7 +43,7 @@ int readRsoFile(char *loc, uint8_t *samples, struct rso_header_data *header)
 {
 	// Opens the file...
 	
-	printf("Opening file...\t");
+	printf("Opening RSO file...\t");
 	
 	FILE *inFile;
 	inFile = fopen(loc, "r");
@@ -63,7 +70,7 @@ int readRsoFile(char *loc, uint8_t *samples, struct rso_header_data *header)
 	
 	//
 	
-	printf("Analysing file...\t");
+	printf("Analysing RSO file...\t");
 	
 	int x;
 	int loop = 0;
@@ -145,8 +152,99 @@ int readRsoFile(char *loc, uint8_t *samples, struct rso_header_data *header)
 	}
 	printf("done.\n");
 	
-	printf("Closing file...\t");
+	printf("Closing RSO file...\t");
 	fclose(inFile);		// Closes the file...
+	printf("done.\n");
+	
+	
+}
+
+
+int writeRsoFile(char *loc, uint8_t *samples, struct rso_header_data *header)
+{
+	// Opens the file...
+	
+	printf("Opening RSO file...\t");
+	
+	FILE *outFile;
+	outFile = fopen(loc, "w");
+	
+	if (! outFile)
+	{
+		printf("error.\n");
+		exit(1);
+	}
+	else
+	{
+		printf("done.\n");
+	}
+	
+	uint8_t samplerate8[2];
+	cvt16to8(header->samplerate, samplerate8);
+	
+	uint8_t length8[2];
+	cvt16to8(header->length, length8);
+	
+	
+	//
+	
+	printf("Writing data...  \t");
+	
+	int loop = 0;
+	while (loop < (header->length + 8))
+	{
+		if (loop == 0)
+		{
+			fputc(0x01, outFile); 	// The magic byte at offset 0
+		}
+		
+		if (loop == 1)
+		{
+			fputc(0x00, outFile);	// The compression flag at offset 1; we can't do compression yet...
+		}
+		
+		if (loop == 2)
+		{
+			fputc(length8[0], outFile); 	// The first byte of length
+		}
+		
+		if (loop == 3)
+		{
+			fputc(length8[1], outFile);		// The second byte of length
+
+		}
+		
+		if (loop == 4)
+		{
+			fputc(samplerate8[0], outFile); 	// The first byte of samplerate
+		}
+		
+		if (loop == 5)
+		{
+			fputc(samplerate8[1], outFile); 	// The second byte of samplerate
+		}
+		
+		if (loop == 6)
+		{
+			fputc(0x00, outFile);		// padding / loop flag
+		}
+		
+		if (loop == 7)
+		{
+			fputc(0x00, outFile);		// padding / loop flag
+		}
+		
+		if (loop >= 8 && loop < 65535)
+		{
+			fputc(samples[loop-8], outFile);
+		}
+		
+		loop++;
+	}
+	printf("done.\n");
+	
+	printf("Closing RSO file...\t");
+	fclose(outFile);		// Closes the file...
 	printf("done.\n");
 	
 	
@@ -154,23 +252,6 @@ int readRsoFile(char *loc, uint8_t *samples, struct rso_header_data *header)
 
 int main(int argc, char *argv[])
 {
-	if (! strcmp(argv[1], "-h") || ! strcmp(argv[1], "--help")  || argc < 3)
-	{
-		
-		printf("\
- Syntax: 				\n\
-   ./rso <option> <file> [outfile]	\n\
-					\n\
- Options: 				\n\
-   -h		= display help.		\n\
-   -a		= Analyse an RSO file (display the header data).		\n\
-   -d		= Dump the sample data to the screen as hexadecimal.		\n\
-   -w		= Convers an RSO file to <outfile> in wav format.		\n\
-	\n\n");
-
-		exit(0);
-	}
-	
 
 	// And, most importantly,
 	uint8_t samples[65534];
@@ -204,7 +285,7 @@ int main(int argc, char *argv[])
 		printf("Samplerate    = %dHz", (int) rso_header -> samplerate);
 	}
 	
-	if (! strcmp(argv[1], "-d"))
+	else if (! strcmp(argv[1], "-d"))
 	{
 		readRsoFile(argv[2], &samples[0], rso_header);
 		
@@ -218,7 +299,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	if (! strcmp(argv[1], "-w") )	// They want to convert to WAV
+	else if (! strcmp(argv[1], "-w") )	// They want to convert from RSO to WAV
 	{
 		readRsoFile(argv[2], &samples[0], rso_header);		// Reads our rso file into the array of 8-bit ints and the header_data struct
 		
@@ -240,18 +321,13 @@ int main(int argc, char *argv[])
 		
 		short samples16[65534]; 	// Will be the equivalent of samples[], but with short instead of uint8_t
 		
-		for (int i = 0; i < (rso_header->length); i++)
+		for (int i = 0; i < (rso_header->length); i++)	// Converts the samples to 16-bit, (let's hope that short is 16-bit...)
 		{
-			short tmp = (short)(samples[i]-128);		// Converts the sample to signed
+			short sample = (short)(samples[i]-128);		// Converts the sample to signed
 			
-			samples16[i] = tmp << 8 /*(samples[i] << 8)*/;
-			//printf("%d ", (int) tmp);
+			samples16[i] = sample << 8 ;
+			//printf("%d ", (int) sample << 8);
 		}
-		
-		//for (int i = 0; i < (rso_header->length); i++)
-		//{
-			
-		//}
 		
 		sf_write_short(wav_file, samples16, (rso_header->length));
 		
@@ -264,6 +340,77 @@ int main(int argc, char *argv[])
 		printf("done.\n");
 	}
 	
-
-	exit(0);
+	else if (! strcmp(argv[1], "-r") )	// They want to convert from WAV to RSO.
+	{
+		struct SF_INFO *wav_header = malloc(sizeof(SF_INFO));	// Allocates us memory for the wav header struct...
+		
+		memset(wav_header, 0, sizeof(SF_INFO)); 	// And frees it of any junk that came in it.
+		
+		printf("Opening WAV file...\t");
+		SNDFILE* wav_file;
+		wav_file = sf_open(argv[2], SFM_READ, wav_header);
+		printf("done.\n");
+		
+		short samples16[65534];
+		
+		// Here, we check whether the wav file's parameters are compatible with the RSO format; if not, we change them.
+		
+		printf("Analising WAV file...\t");
+		
+		if (wav_header -> frames > 65534)
+		{
+			wav_header -> frames = 65534;
+			printf("warning:\nThe given WAV file contains more than 65534 samples;\nAny further samples will be ignored.\n");
+		}
+		else if (wav_header -> samplerate > 65534)
+		{
+			wav_header -> samplerate = 65534;
+		}
+		else
+		{
+			printf("done.\n");
+		}
+		
+		// Read the sample data
+		
+		sf_read_short(wav_file, samples16, wav_header->frames);
+		
+		
+		for (int i = 0; i < (wav_header -> frames); i++)
+		{													// Converts the sample data to unsigned 8-bit
+			unsigned short sample = (short)(samples16[i] / 2 + 0x8000);	// i.e. half of 65534
+		
+			samples[i] = sample >> 8 ;
+			
+			printf("%d ", (int) samples[i]);
+		}
+		
+		// Take care of the RSO header...
+		
+		struct rso_header_data  *rso_header = malloc( sizeof( struct rso_header_data ) );
+		
+		rso_header -> compression = 0;
+		rso_header -> samplerate  = (uint16_t) (wav_header -> samplerate);
+		rso_header -> length      = (uint16_t) (wav_header -> frames);
+		
+		writeRsoFile(argv[3], &samples[0], rso_header);
+		
+	}
+	
+	else
+	{
+		printf("\
+ Syntax: 	\n\
+   ./rso <option> <file> [outfile]		\n\
+\n\
+ Options: 	\n\
+   -h		= display help.		\n\
+   -a		= Analyse an RSO file (display the header data).	\n\
+   -d		= Dump the sample data to the screen as hexadecimal.	\n\
+   -w		= Converts an RSO file to <outfile> in WAV format.	\n\
+   -r		= Converts a WAV file to <outfile> in RSO format.	\n\
+	\n\n");
+	}
+	
+	return 0;
 }
