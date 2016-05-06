@@ -15,23 +15,16 @@
  *
  */
 
-enum filetype {
-	WAV_FILE,
-	RSO_FILE
-	};
 
+// Only works properly on three letter extentions, but both .rso and .wav are these...
 char* get_extention(char *filename)
 {
 	int filename_len = strlen(filename);
-	//static char lastfourchars[5] = {'\0','\0','\0','\0','\0'};
 	char *lastfourchars = malloc(sizeof(char) * 4);
 	
 	strncpy(&lastfourchars[0], &filename[filename_len - 4], 4);
 	
-	printf("%s\n", lastfourchars);
-	
 	return lastfourchars;
-	//return WAV_FILE;
 }
 
 ///////////
@@ -127,6 +120,21 @@ int main(int argc, char *argv[])
 		wav_to_rso(argv[2], argv[3]);
 	}
 	
+	// simple command mode...
+	else
+	{
+		if (! strcmp(get_extention(argv[1]), ".rso") || ! strcmp(get_extention(argv[1]), ".RSO") &&
+			! strcmp(get_extention(argv[2]), ".wav") || ! strcmp(get_extention(argv[2]), ".WAV")  )
+		{
+			rso_to_wav(argv[1], argv[2]);
+		}
+		
+		if (! strcmp(get_extention(argv[1]), ".wav") || ! strcmp(get_extention(argv[1]), ".WAV") &&
+			! strcmp(get_extention(argv[2]), ".rso") || ! strcmp(get_extention(argv[2]), ".RSO")  )
+		{
+			wav_to_rso(argv[1], argv[2]);
+		}
+	}
 	
 	return 0;
 }
@@ -242,7 +250,7 @@ void wav_to_rso(char *infile, char *outfile)
 	
 		samples[i] = sample >> 8 ;
 		
-		printf("%d ", (int) samples[i]);
+		//printf("%d ", (int) samples[i]);
 	}
 	
 	// Take care of the RSO header...
