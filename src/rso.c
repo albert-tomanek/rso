@@ -31,22 +31,14 @@ char* get_extention(char *filename)
 
 void rso_to_wav(char *infile, char *outfile);
 void wav_to_rso(char *infile, char *outfile);
+void help();
 
 int main(int argc, char *argv[])
 {
 	
 	if (argc < 2)
 	{
-		printf("\
- Syntax: 								\n\
-   ./rso <option> <file> [outfile]		\n\
-										\n\
- Options: 								\n\
-   -a		= Analyse an RSO file (display the header data).		\n\
-   -d		= Dump RSO sample data to the screen as hexadecimal.	\n\
-   -w		= Converts an RSO file to <outfile> in WAV format.		\n\
-   -r		= Converts a WAV file to <outfile> in RSO format.		\n\
-	\n\n");
+		help();
 		
 		return 0;
 	}
@@ -123,17 +115,22 @@ int main(int argc, char *argv[])
 	// simple command mode...
 	else
 	{
-		if (! strcmp(get_extention(argv[1]), ".rso") || ! strcmp(get_extention(argv[1]), ".RSO") &&
-			! strcmp(get_extention(argv[2]), ".wav") || ! strcmp(get_extention(argv[2]), ".WAV")  )
+		if (argc >= 3)
 		{
-			rso_to_wav(argv[1], argv[2]);
+			if (! strcmp(get_extention(argv[1]), ".rso") || ! strcmp(get_extention(argv[1]), ".RSO") &&
+				! strcmp(get_extention(argv[2]), ".wav") || ! strcmp(get_extention(argv[2]), ".WAV")  )
+			{
+				rso_to_wav(argv[1], argv[2]);
+			}
+			
+			if (! strcmp(get_extention(argv[1]), ".wav") || ! strcmp(get_extention(argv[1]), ".WAV") &&
+				! strcmp(get_extention(argv[2]), ".rso") || ! strcmp(get_extention(argv[2]), ".RSO")  )
+			{
+				wav_to_rso(argv[1], argv[2]);
+			}
 		}
 		
-		if (! strcmp(get_extention(argv[1]), ".wav") || ! strcmp(get_extention(argv[1]), ".WAV") &&
-			! strcmp(get_extention(argv[2]), ".rso") || ! strcmp(get_extention(argv[2]), ".RSO")  )
-		{
-			wav_to_rso(argv[1], argv[2]);
-		}
+		else  help(); // If they type something like 'rso --help'
 	}
 	
 	return 0;
@@ -263,4 +260,27 @@ void wav_to_rso(char *infile, char *outfile)
 	
 	writeRsoFile(outfile, &samples[0], rso_header);
 
+}
+
+void help()
+{
+	printf("\
+ Syntax: 								\n\
+   rso <option> <file> [outfile]		\n\
+										\n\
+ Options: 								\n\
+   -a		= Analyse an RSO file (display the header data).		\n\
+   -d		= Dump RSO sample data to the screen as hexadecimal.	\n\
+   -w		= Converts an RSO file to <outfile> in WAV format.		\n\
+   -r		= Converts a WAV file to <outfile> in RSO format.		\n\
+																	\n\
+ Examples:		\n\
+	rso -w piano.rso piano.wav      - Converts \'piano.rso\' to a WAV file.		\n\
+	\n\
+	rso -r guitar.wav guitar.rso    - Converts \'guitar.wav\' to an RSO file.	\n\
+	\n\
+	rso guitar.wav guitar.rso       - A simpler way of doing the above.			\n\
+	\n\
+	rso -a piano.rso                - Prints the header data of \'piano.rso\'.	\n\
+	\n\n");
 }

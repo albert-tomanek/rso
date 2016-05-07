@@ -16,4 +16,25 @@ Byte   |   Description
 
 
 Files in this project:
- - 
+ - LICENSE		(The General Public License v3)
+ - README		(This readme file)
+ - Makefile		(used my make)
+ - src/
+  `- rso.c		(The main program)
+  `- rso_io.c		(A library to handle RSO files used by rso.c)
+  `- rso_io.h		(The header file for rso_io.c)
+ - bin/
+  `- rso		(The precompiled Linux binary)
+  `- rso.exe		(The precompiled win32 binary)
+ - misc/
+  `- file_format.png	(A screenshot explaining the RSO format)
+  `- HIT2.rso		(A sample RSO file.)
+ 
+INSTALLING
+==========
+A precompiled Linux binary is in bin/rso,
+which was compiled on Lubuntu 16.04 i386.
+
+To compile RSO yourself, run the following commands as root:
+make
+make install
