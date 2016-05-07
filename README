@@ -1,0 +1,19 @@
+RSO is a small utility written in C by Albert Tomanek.
+It is used to convert sound files between the WAV format,
+and the RSO format, used by the Lego Mindstorms NXT computer brick.
+
+
+Structure of the RSO format:
+-------+----------------
+Byte   |   Description
+=======+================
+0      | Magic byte (always 01)
+1      | Compression flag (00 or 01), not implemented yet.
+2 & 3  | Number of samples (16-bit unsigned int)
+4 & 5  | Samplerate (16-bit unsigned int)
+6 & 7  | Padding (and loop flag, not implemented yet)
+8+     | Sample data (8-bit unsigned)
+
+
+Files in this project:
+ - 
