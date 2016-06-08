@@ -11,7 +11,8 @@ FILES
 =====
  - LICENSE		(The General Public License v3)
  - README		(This readme file)
- - Makefile		(used my make)
+ -(Makefile)		(used by make, DEPPRECIATED)
+ - SConstruct		(Make alternative; 'cos I don't like make.)
  - install.bat          (Run, to install on MS Windows)
  - src/
   `- rso.c		(The main program)
@@ -33,11 +34,17 @@ GNU Linux
   A precompiled Linux binary is in 'bin/rso',
   which was compiled on Lubuntu 16.04 i386.
   
-  To compile RSO yourself, run the following commands as root:
-  make
-  make install
+  To compile and install RSO yourself, run the following commands as root:
+  scons rso
+  scons install
   
   You can then run rso by typing 'rso' in the terminal.
+  
+  NOTE: I stopped using Make,
+        and use SConstruct (http://www.scons.org) instead.
+        To install:
+            sudo apt-get install scons
+        
 
 MS Windows
 ----------

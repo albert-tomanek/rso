@@ -24,5 +24,7 @@
   
   void readRsoFile (char *loc, uint8_t *samples, struct rso_header_data *header);
   void writeRsoFile(char *loc, uint8_t *samples, struct rso_header_data *header);
+  
+  void readRsoHeader(char *loc, struct rso_header_data *header);
 
 #endif

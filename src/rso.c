@@ -47,21 +47,9 @@ int main(int argc, char *argv[])
 	
 	if (! strcmp(argv[1], "-a") )
 	{
-		// And, most importantly,
-		uint8_t samples[65534];
-		
-		/* 65534 is the maximum number of samples in an RSO file,
-		 * since the field occupies 2 bytes in the header.
-		 * However, a potential workaround for this could exist
-		 * by putting another header at the end of the sample data,
-		 * thus allowing for another set of 65534 samples.
-		 */
-		
-		memset(samples, 0, 65534);
-		
 		struct rso_header_data *rso_header = malloc(sizeof(struct rso_header_data));
 			
-		readRsoFile(argv[2], &samples[0], rso_header);
+		readRsoHeader(argv[2], rso_header); 	// Newly written function in rso_io.h ; stripped down version of readRsoFile() .
 		
 		printf("Compression   = ");
 		if ( rso_header -> compression == 1)
